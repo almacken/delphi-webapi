@@ -5,13 +5,19 @@ import akka.http.scaladsl.server.HttpApp
 /**
   * Web server configuration for Delphi web API.
   */
-object Server extends HttpApp {
+object Server extends HttpApp with SearchFeature {
+  private implicit var configuration : Configuration = new Configuration()
 
-   override def routes =
+  def configure(configuration: Configuration) = {
+    this.configuration = configuration
+  }
+
+
+  override def routes =
       path("version") { version } ~
-        path("features") { features } ~
-        pathPrefix("search" / Remaining) { query => search(query) } ~
-        pathPrefix("retrieve" / Remaining) { identifier => retrieve(identifier) }
+        path("features") { processFeatures } ~
+        pathPrefix("search" / Remaining) { query => processSearch(query) } ~
+        pathPrefix("retrieve" / Remaining) { identifier => processRetrieve(identifier) }
 
 
   private def version = {
@@ -22,7 +28,7 @@ object Server extends HttpApp {
     }
   }
 
-  private def features = {
+  private def processFeatures = {
     get {
       complete {
         "features"
@@ -30,22 +36,24 @@ object Server extends HttpApp {
     }
   }
 
-  def retrieve(identifier: String) = {
+  def processRetrieve(identifier: String) = {
     get {
       complete(identifier)
     }
   }
 
-  def search(query: String) = {
+  def processSearch(query: String) = {
     get {
       complete {
-        query
+        //implicit val configuration = this.configuration
+        search(query).toString()
       }
     }
   }
 
   def main(args: Array[String]): Unit = {
     val configuration = new Configuration()
+    Server.configure(configuration)
     Server.startServer(configuration.bindHost, configuration.bindPort)
   }
 
